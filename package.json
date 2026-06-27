@@ -1,0 +1,29 @@
+{
+  "name": "angelina-tester",
+  "version": "0.1.0",
+  "description": "Human-like AI agent that discovers, understands, and tests any web app",
+  "type": "module",
+  "bin": {
+    "angelina-tester": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test:app": "node dist/cli.js",
+    "dev": "tsc && node dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0",
+    "playwright": "^1.49.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
