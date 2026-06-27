@@ -120,3 +120,36 @@ export interface LLMMessage {
   role: "system" | "user" | "assistant";
   content: string | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;
 }
+
+export type RunPhase = "queued" | "discovering" | "planning" | "executing" | "reporting" | "completed" | "failed";
+
+export interface RunProgressEvent {
+  type: "phase" | "log" | "feature" | "test_start" | "test_step" | "test_end" | "report" | "error" | "complete";
+  runId: string;
+  timestamp: string;
+  phase?: RunPhase;
+  message?: string;
+  data?: unknown;
+}
+
+export interface TestRunSummary {
+  id: string;
+  status: RunPhase;
+  config: TesterConfig;
+  createdAt: string;
+  updatedAt: string;
+  report?: TestReport;
+  error?: string;
+  logs: string[];
+}
+
+export interface StartRunRequest {
+  url: string;
+  appName?: string;
+  appDescription?: string;
+  maxPages?: number;
+  maxTests?: number;
+  model?: string;
+  headless?: boolean;
+  apiKey?: string;
+}

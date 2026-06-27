@@ -1,127 +1,143 @@
 # Angelina Tester
 
-A **human-like AI testing agent** that can test any web app. It discovers the app, understands its purpose, generates a full test plan, runs every function like a real user would, and reports what works and what doesn't.
+A **human-like AI testing agent** packaged as a full web app. Point it at any URL — it explores the app, understands its purpose, tests every function like a real user, and shows live results in the dashboard.
 
 ## What it does
 
 ```
 Your app URL
      ↓
-① Discover  — explores pages, maps buttons/forms/links
+① Discover   — crawls pages, maps buttons/forms/links
 ② Understand — AI infers app purpose, features, user flows
-③ Plan      — generates test cases for every function
-④ Execute   — runs tests with human-like clicks, typing, scrolling
-⑤ Verify    — AI checks each outcome against expectations
-⑥ Report    — HTML + JSON report with pass/fail details
+③ Plan       — generates test cases for every function
+④ Execute    — runs tests with human-like clicks, typing, scrolling
+⑤ Verify     — AI checks outcomes against expectations
+⑥ Report     — live dashboard + HTML/JSON reports
 ```
 
-## Quick start
+## Quick start (web app)
 
 ```bash
-# Install dependencies
+# 1. Install everything
 npm install
-npx playwright install chromium
+npm install --prefix web
 
-# Set your OpenAI API key
+# 2. Configure API key
 cp .env.example .env
-# Edit .env and add OPENAI_API_KEY=sk-...
+# Edit .env → OPENAI_API_KEY=sk-...
 
-# Build
+# 3. Build
 npm run build
 
-# Test any app
-npm start -- --url https://example.com
+# 4. Run the app
+npm run start:app
+# Open http://localhost:3001
 ```
 
-## Usage
+### Development mode (hot reload)
 
 ```bash
-angelina-tester --url <app-url> [options]
+npm install
+npm install --prefix web
+cp .env.example .env
 
-Options:
-  -u, --url <url>           URL of the app to test (required)
-  -n, --name <name>         App name hint for the AI
-  -d, --description <text>  App description hint
-  -o, --output <dir>        Report output directory (default: reports)
-  --max-pages <n>           Max pages to explore (default: 8)
-  --max-tests <n>           Max test cases to run (default: 15)
-  --model <model>           OpenAI model (default: gpt-4o)
-  --headed                  Show browser window
-  --timeout <ms>            Action timeout (default: 15000)
+# Terminal: builds server on save + runs API + Vite frontend
+npm run dev
+
+# Frontend: http://localhost:5173  (proxies API to :3001)
+# Or use production build at http://localhost:3001
 ```
 
-### Examples
+## CLI mode (headless)
 
 ```bash
-# Test a todo app
-npm start -- --url https://todomvc.com/examples/react/ --name "TodoMVC"
-
-# Test with hints (helps AI understand faster)
-npm start -- --url https://myapp.com --name "SkinPod" --description "Skincare routine tracker for beginners"
-
-# Watch the browser work
-npm start -- --url https://myapp.com --headed --max-tests 20
+npm run build:server
+npm start -- --url https://example.com --name "My App"
 ```
 
-## How it acts human
-
-| Behavior | Detail |
-|----------|--------|
-| **Reading** | Scans visible text and interactive elements before acting |
-| **Clicking** | Scrolls into view, hovers, pauses, then clicks |
-| **Typing** | Character-by-character with random delays |
-| **Scrolling** | Explores below-the-fold content |
-| **Recovery** | If a step fails, AI suggests an alternative action |
-| **Verification** | Uses vision + page state to confirm outcomes |
-
-## Output
-
-Reports are saved to `reports/`:
-
-- `report-<timestamp>.html` — visual report with pass/fail, steps, screenshots
-- `report-<timestamp>.json` — machine-readable full results
-- `discovery.json` — app understanding and features found
-- `test-plan.json` — generated test cases
-- `screenshots/` — step-by-step screenshots
-
-## Architecture
+## Project structure
 
 ```
-src/
-├── cli.ts                 # CLI entry point
-├── orchestrator.ts        # Runs discover → plan → execute → report
-├── types.ts               # Shared types
-├── llm/client.ts          # OpenAI integration
-├── browser/
-│   └── human-browser.ts   # Playwright with human-like behavior
-├── agents/
-│   ├── discoverer.ts      # Explores app, understands purpose
-│   ├── planner.ts         # Generates comprehensive test plan
-│   └── executor.ts        # Runs tests + AI verification
-└── reporter/
-    └── index.ts           # HTML + JSON reports
+angelina/
+├── src/                          # Backend + AI engine
+│   ├── server/
+│   │   ├── index.ts              # Express app (API + serves UI)
+│   │   ├── routes.ts             # REST + SSE endpoints
+│   │   └── run-store.ts          # Test run state management
+│   ├── agents/
+│   │   ├── discoverer.ts         # Explores app, understands purpose
+│   │   ├── planner.ts            # Generates test plan
+│   │   └── executor.ts           # Runs tests + AI verification
+│   ├── browser/
+│   │   └── human-browser.ts      # Playwright with human-like behavior
+│   ├── llm/client.ts             # OpenAI integration
+│   ├── orchestrator.ts           # Full test pipeline
+│   ├── reporter/index.ts         # HTML + JSON reports
+│   ├── types.ts                  # Shared types
+│   └── cli.ts                    # CLI entry point
+├── web/                          # React frontend
+│   ├── src/
+│   │   ├── App.tsx               # Main app shell
+│   │   ├── api.ts                # API client + SSE
+│   │   └── components/
+│   │       ├── Layout.tsx        # Sidebar + navigation
+│   │       ├── NewRunForm.tsx    # Start a new test
+│   │       ├── RunDetail.tsx     # Live progress + results
+│   │       └── ReportView.tsx    # App understanding view
+│   └── vite.config.ts
+├── reports/                      # Generated reports (per run)
+└── package.json
 ```
 
-## Requirements
+## API endpoints
 
-- Node.js 20+
-- OpenAI API key (uses GPT-4o with vision for understanding and verification)
-- Chromium (installed via Playwright)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/runs` | List all test runs |
+| POST | `/api/runs` | Start a new test run |
+| GET | `/api/runs/:id` | Get run status + report |
+| GET | `/api/runs/:id/events` | SSE live progress stream |
+| GET | `/api/runs/:id/screenshots/:file` | Step screenshots |
+
+### Start a run (POST /api/runs)
+
+```json
+{
+  "url": "https://your-app.com",
+  "appName": "My App",
+  "appDescription": "Optional hint for the AI",
+  "maxPages": 8,
+  "maxTests": 15,
+  "model": "gpt-4o",
+  "apiKey": "sk-... (optional if set in .env)"
+}
+```
 
 ## Environment variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
-| `OPENAI_MODEL` | No | `gpt-4o` | Model for all AI steps |
+| `OPENAI_API_KEY` | Yes* | — | OpenAI API key (*or pass in UI) |
+| `OPENAI_MODEL` | No | `gpt-4o` | Model for AI steps |
+| `PORT` | No | `3001` | Server port |
 | `HEADLESS` | No | `true` | Run browser headless |
 
-## Limitations (v0.1)
+## How it acts human
 
-- Web apps only (URLs starting with http/https)
-- Requires OpenAI API access
-- Best for SPAs and multi-page web apps on the same origin
-- Does not yet support native mobile apps or authenticated flows out of the box (pass hints via `--description` for now)
+| Behavior | Detail |
+|----------|--------|
+| Reading | Scans visible text and elements before acting |
+| Clicking | Scrolls into view, hovers, pauses, then clicks |
+| Typing | Character-by-character with random delays |
+| Recovery | If a step fails, AI tries an alternative |
+| Verification | Uses vision + page state to confirm outcomes |
+
+## Requirements
+
+- Node.js 20+
+- OpenAI API key (GPT-4o with vision)
+- Chromium (auto-installed via Playwright)
 
 ## License
 

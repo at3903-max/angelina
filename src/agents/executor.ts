@@ -16,7 +16,8 @@ export class ExecutorAgent {
   async runTest(
     browser: HumanBrowser,
     testCase: TestCase,
-    startUrl: string
+    startUrl: string,
+    onLog?: (message: string) => void
   ): Promise<TestResult> {
     const startTime = Date.now();
     const stepResults: StepResult[] = [];
@@ -25,6 +26,7 @@ export class ExecutorAgent {
     let verificationNotes = "";
 
     console.log(`\n  ▶ ${testCase.name}`);
+    onLog?.(`Running: ${testCase.name}`);
 
     try {
       await browser.navigate(startUrl);
@@ -47,6 +49,7 @@ export class ExecutorAgent {
             screenshotPath,
           });
           console.log(`    ✓ Step ${i + 1}: ${action.description}`);
+          onLog?.(`✓ ${action.description}`);
         } catch (stepErr) {
           const msg = (stepErr as Error).message;
           snapshot = await browser.captureSnapshot(`fail-${i + 1}`);
@@ -61,6 +64,7 @@ export class ExecutorAgent {
             screenshotPath,
           });
           console.log(`    ✗ Step ${i + 1}: ${action.description} — ${msg}`);
+          onLog?.(`✗ ${action.description}: ${msg}`);
 
           const recovered = await this.tryRecover(browser, testCase, action, snapshot, msg);
           if (recovered) {

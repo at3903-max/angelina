@@ -7,7 +7,15 @@ import { ExecutorAgent } from "./agents/executor.js";
 import { HumanBrowser, saveSnapshotJson } from "./browser/human-browser.js";
 import { LLMClient } from "./llm/client.js";
 import { Reporter, printSummary } from "./reporter/index.js";
-import type { TestReport, TesterConfig } from "./types.js";
+import type { RunPhase, RunProgressEvent, TestReport, TesterConfig } from "./types.js";
+
+export type ProgressCallback = (event: Omit<RunProgressEvent, "runId" | "timestamp">) => void;
+
+export interface OrchestratorOptions {
+  runId?: string;
+  onProgress?: ProgressCallback;
+  silent?: boolean;
+}
 
 export class AppTesterOrchestrator {
   private llm: LLMClient;
@@ -15,22 +23,47 @@ export class AppTesterOrchestrator {
   private planner: PlannerAgent;
   private executor: ExecutorAgent;
   private reporter: Reporter;
+  private runId: string;
+  private onProgress?: ProgressCallback;
+  private silent: boolean;
 
-  constructor(private config: TesterConfig, apiKey: string) {
+  constructor(
+    private config: TesterConfig,
+    apiKey: string,
+    options: OrchestratorOptions = {}
+  ) {
     this.llm = new LLMClient(apiKey, config.model);
     this.discoverer = new DiscovererAgent(this.llm);
     this.planner = new PlannerAgent(this.llm);
     this.executor = new ExecutorAgent(this.llm);
     this.reporter = new Reporter(config.outputDir);
+    this.runId = options.runId ?? "cli";
+    this.onProgress = options.onProgress;
+    this.silent = options.silent ?? false;
+  }
+
+  private emit(
+    type: RunProgressEvent["type"],
+    message?: string,
+    data?: unknown,
+    phase?: RunPhase
+  ): void {
+    this.onProgress?.({ type, message, data, phase });
+    if (!this.silent && message) {
+      console.log(message);
+    }
   }
 
   async run(): Promise<TestReport> {
     const startTime = Date.now();
     await mkdir(this.config.outputDir, { recursive: true });
 
-    console.log("\n🤖 Angelina App Tester");
-    console.log(`   Target: ${this.config.url}`);
-    console.log(`   Model:  ${this.config.model}\n`);
+    this.emit("phase", "Starting test run", undefined, "discovering");
+    if (!this.silent) {
+      console.log("\n🤖 Angelina App Tester");
+      console.log(`   Target: ${this.config.url}`);
+      console.log(`   Model:  ${this.config.model}\n`);
+    }
 
     const browser = await chromium.launch({ headless: this.config.headless });
     const context = await browser.newContext({
@@ -45,8 +78,7 @@ export class AppTesterOrchestrator {
     await humanBrowser.init();
 
     try {
-      // Phase 1: Discover & understand
-      console.log("📡 Phase 1: Discovering app & understanding purpose...");
+      this.emit("phase", "Discovering app & understanding purpose...", undefined, "discovering");
       const { understanding, snapshots } = await this.discoverer.exploreApp(
         humanBrowser,
         this.config
@@ -59,25 +91,30 @@ export class AppTesterOrchestrator {
           elementCount: s.elements.length,
         })),
       });
-      console.log(`   ✓ Found ${understanding.coreFeatures.length} features across ${understanding.discoveredPages.length} pages`);
-      console.log(`   ✓ Purpose: ${understanding.purpose.slice(0, 100)}...`);
 
-      // Phase 2: Plan tests
-      console.log("\n📋 Phase 2: Generating test plan...");
+      this.emit(
+        "feature",
+        `Found ${understanding.coreFeatures.length} features`,
+        { understanding, featureCount: understanding.coreFeatures.length }
+      );
+
+      this.emit("phase", "Generating test plan...", undefined, "planning");
       const plan = await this.planner.createPlan(understanding, this.config);
       await saveSnapshotJson(this.config.outputDir, "test-plan", plan);
-      console.log(`   ✓ Created ${plan.testCases.length} test cases`);
+      this.emit("log", `Created ${plan.testCases.length} test cases`, { plan });
 
-      // Phase 3: Execute tests
-      console.log("\n🧪 Phase 3: Running tests (human-like)...");
+      this.emit("phase", "Running tests (human-like)...", undefined, "executing");
       const results = [];
       for (const testCase of plan.testCases) {
+        this.emit("test_start", testCase.name, { testCase });
         const result = await this.executor.runTest(
           humanBrowser,
           testCase,
-          this.config.url
+          this.config.url,
+          (msg) => this.emit("test_step", msg, { testId: testCase.id })
         );
         results.push(result);
+        this.emit("test_end", `${testCase.name}: ${result.status}`, { result });
       }
 
       const report: TestReport = {
@@ -95,14 +132,21 @@ export class AppTesterOrchestrator {
         generatedAt: new Date().toISOString(),
       };
 
-      // Phase 4: Report
-      console.log("\n📊 Phase 4: Generating report...");
+      this.emit("phase", "Generating report...", undefined, "reporting");
       const { jsonPath, htmlPath } = await this.reporter.generate(report);
-      printSummary(report);
-      console.log(`\n  JSON: ${jsonPath}`);
-      console.log(`  HTML: ${htmlPath}\n`);
+      if (!this.silent) {
+        printSummary(report);
+        console.log(`\n  JSON: ${jsonPath}`);
+        console.log(`  HTML: ${htmlPath}\n`);
+      }
 
+      this.emit("report", "Report ready", { jsonPath, htmlPath, report });
+      this.emit("complete", "Test run completed", { report }, "completed");
       return report;
+    } catch (err) {
+      const message = (err as Error).message;
+      this.emit("error", message, { error: message }, "failed");
+      throw err;
     } finally {
       await browser.close();
     }
