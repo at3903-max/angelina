@@ -1,0 +1,130 @@
+{
+  "id": "maya-chen",
+  "name": "Maya Chen",
+  "segment": "acne-prone-beginner",
+  "priority": "primary",
+  "demographics": {
+    "age": 22,
+    "gender": "female",
+    "location": "suburban_us",
+    "occupation": "junior_marketing_coordinator",
+    "annual_income_usd": 48000,
+    "living_situation": "roommates"
+  },
+  "skin_profile": {
+    "concerns": ["acne", "oily_skin", "breakouts", "post_inflammatory_redness"],
+    "knowledge_level": "zero",
+    "current_routine": "inconsistent_wash_only",
+    "past_product_experience": "random_viral_purchases_no_results",
+    "dermatologist_access": "limited_perceived_cost_barrier"
+  },
+  "psychographics": {
+    "motivations": [
+      "clearer_skin",
+      "confidence_in_social_settings",
+      "stop_wasting_money",
+      "simple_actionable_plan"
+    ],
+    "fears": [
+      "making_acne_worse",
+      "wasting_money_again",
+      "being_judged",
+      "information_overload"
+    ],
+    "values": [
+      "honesty",
+      "simplicity",
+      "peer_proof",
+      "affordability"
+    ]
+  },
+  "online_behavior": {
+    "platforms": ["tiktok", "instagram", "reddit", "google", "youtube"],
+    "subreddits": ["SkincareAddiction", "acne"],
+    "search_queries": [
+      "simple skincare routine for acne beginners",
+      "why does my acne keep coming back",
+      "difference between salicylic acid and benzoyl peroxide",
+      "skincare order for dummies",
+      "is my acne hormonal how to tell"
+    ],
+    "content_preferences": [
+      "before_after_similar_skin",
+      "3_to_4_product_starters",
+      "plain_language_explainers",
+      "realistic_timelines"
+    ],
+    "content_avoids": [
+      "12_step_luxury_routines",
+      "fear_based_marketing",
+      "unrelatable_influencers",
+      "medical_jargon_without_translation"
+    ]
+  },
+  "pain_points": {
+    "emotional": [
+      "embarrassment",
+      "self_blame",
+      "event_anxiety"
+    ],
+    "practical": [
+      "information_overload",
+      "contradictory_advice",
+      "no_clear_starting_point",
+      "product_irritation_history"
+    ],
+    "financial": [
+      "budget_constraints",
+      "derm_cost_perception",
+      "starter_kit_risk"
+    ]
+  },
+  "jobs_to_be_done": [
+    "Tell me what to do first tonight",
+    "Explain ingredients in plain English",
+    "Help me build a routine I won't quit",
+    "Show me if I'm making progress",
+    "Tell me when I need a doctor"
+  ],
+  "objections": [
+    {
+      "statement": "I've tried everything",
+      "underlying_fear": "nothing_will_work_for_me"
+    },
+    {
+      "statement": "This might make it worse",
+      "underlying_fear": "irritation_or_purging_before_event"
+    },
+    {
+      "statement": "I don't have time",
+      "underlying_fear": "routine_too_complex"
+    }
+  ],
+  "success_metrics": {
+    "week_2": "routine_feels_sustainable_skin_less_irritated",
+    "week_6_8": "fewer_new_breakouts_understands_triggers",
+    "month_3": "refers_friend_sticks_with_product"
+  },
+  "messaging": {
+    "resonates": [
+      "You don't need a 10-step routine to start",
+      "Here's what to do tonight — one step at a time",
+      "Confused? That's normal. We'll keep it simple"
+    ],
+    "avoid": [
+      "Transform overnight",
+      "You're using the wrong products",
+      "Assume ingredient literacy"
+    ]
+  },
+  "tags": [
+    "acne",
+    "beginner",
+    "overwhelmed",
+    "online-researcher",
+    "budget-conscious",
+    "trust-seeking",
+    "high-intent",
+    "low-knowledge"
+  ]
+}
